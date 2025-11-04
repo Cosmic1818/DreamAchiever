@@ -1,4 +1,3 @@
-
 import React, { useState, ChangeEvent, FormEvent, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { Slide } from '../types';
@@ -205,7 +204,11 @@ const AddSlideModal: React.FC<AddSlideModalProps> = ({
 
     } catch (err) {
       console.error("Error generating Vedic spark:", err);
-      setError("Failed to generate content. Please try again.");
+      let errorMessage = "Failed to generate content. Please try again.";
+      if (err instanceof Error && (err.message.includes('429') || err.message.includes('RESOURCE_EXHAUSTED'))) {
+        errorMessage = "You've exceeded the API quota. Please check your plan and billing details, or try again later.";
+      }
+      setError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
