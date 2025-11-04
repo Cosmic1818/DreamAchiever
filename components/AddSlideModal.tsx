@@ -1,3 +1,4 @@
+
 import React, { useState, ChangeEvent, FormEvent, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { Slide } from '../types';
@@ -18,6 +19,8 @@ interface AddSlideModalProps {
   onGlowColorChange: (color: string) => void;
   slideDuration: number;
   onSlideDurationChange: (duration: number) => void;
+  isUiSoundEnabled: boolean;
+  onIsUiSoundEnabledChange: (enabled: boolean) => void;
   onReset: () => void;
 }
 
@@ -67,6 +70,8 @@ const AddSlideModal: React.FC<AddSlideModalProps> = ({
   onGlowColorChange,
   slideDuration,
   onSlideDurationChange,
+  isUiSoundEnabled,
+  onIsUiSoundEnabledChange,
   onReset,
 }) => {
   const [quote, setQuote] = useState('');
@@ -421,6 +426,28 @@ const AddSlideModal: React.FC<AddSlideModalProps> = ({
                   {slideDuration > 0 ? `${slideDuration / 1000}s` : 'Off'}
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div className="my-6 border-t border-gray-700"></div>
+
+          <div>
+            <h3 className="text-lg font-bold text-white mb-3">UI Sounds</h3>
+            <div className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+              <label htmlFor="ui-sounds-toggle" className="text-white font-medium">
+                Enable click sounds
+              </label>
+              <button
+                id="ui-sounds-toggle"
+                role="switch"
+                aria-checked={isUiSoundEnabled}
+                onClick={() => onIsUiSoundEnabledChange(!isUiSoundEnabled)}
+                className={`${isUiSoundEnabled ? 'bg-purple-600' : 'bg-gray-600'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900`}
+              >
+                <span
+                  className={`${isUiSoundEnabled ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                />
+              </button>
             </div>
           </div>
 
