@@ -7,28 +7,31 @@ import ChevronRightIcon from './icons/ChevronRightIcon';
 interface ImageSliderProps {
   slides: Slide[];
   slideDuration: number;
+  currentIndex: number;
+  onCurrentIndexChange: (index: number) => void;
 }
 
-const ImageSlider: React.FC<ImageSliderProps> = ({ slides, slideDuration }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+const ImageSlider: React.FC<ImageSliderProps> = ({ slides, slideDuration, currentIndex, onCurrentIndexChange }) => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const minSwipeDistance = 50;
 
   const goToPrevious = useCallback(() => {
+    if (slides.length < 2) return;
     const isFirstSlide = currentIndex === 0;
     const newIndex = isFirstSlide ? slides.length - 1 : currentIndex - 1;
-    setCurrentIndex(newIndex);
-  }, [currentIndex, slides.length]);
+    onCurrentIndexChange(newIndex);
+  }, [currentIndex, slides.length, onCurrentIndexChange]);
 
   const goToNext = useCallback(() => {
+    if (slides.length < 2) return;
     const isLastSlide = currentIndex === slides.length - 1;
     const newIndex = isLastSlide ? 0 : currentIndex + 1;
-    setCurrentIndex(newIndex);
-  }, [currentIndex, slides.length]);
+    onCurrentIndexChange(newIndex);
+  }, [currentIndex, slides.length, onCurrentIndexChange]);
 
   const goToSlide = (slideIndex: number) => {
-    setCurrentIndex(slideIndex);
+    onCurrentIndexChange(slideIndex);
   };
   
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -56,20 +59,12 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ slides, slideDuration }) => {
     setTouchEnd(0);
   };
 
-
   useEffect(() => {
     if (slides.length > 1 && slideDuration > 0) {
       const timer = setTimeout(goToNext, slideDuration);
       return () => clearTimeout(timer);
     }
   }, [currentIndex, goToNext, slides.length, slideDuration]);
-  
-  useEffect(() => {
-    if (slides.length > 0 && currentIndex >= slides.length) {
-      setCurrentIndex(slides.length - 1);
-    }
-  }, [slides, currentIndex]);
-
 
   if (!slides || slides.length === 0) {
     return (

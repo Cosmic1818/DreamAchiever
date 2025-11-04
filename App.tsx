@@ -1,63 +1,102 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ImageSlider from './components/ImageSlider';
 import AddSlideModal from './components/AddSlideModal';
 import SettingsIcon from './components/icons/SettingsIcon';
 import { SLIDES } from './constants';
 import { Slide } from './types';
 
+// Audio assets URLs
+const UI_CLICK_SOUND_URL = 'https://storage.googleapis.com/aistudio-hosting/vedic-click.mp3';
+
+
 const App: React.FC = () => {
-  // Load slides from localStorage or use initial constants
+  // Slides state
   const [slides, setSlides] = useState<Slide[]>(() => {
     try {
       const savedSlides = localStorage.getItem('dream-achiever-slides');
-      // If there are saved slides, parse them. Otherwise, use the initial SLIDES constant.
       return savedSlides ? JSON.parse(savedSlides) : SLIDES;
     } catch (error) {
       console.error('Failed to parse slides from localStorage', error);
-      // Fallback to initial slides in case of parsing error
       return SLIDES;
     }
   });
 
-  // Load glow color from localStorage or use a default
+  // Slider state
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // UI state
   const [glowColor, setGlowColor] = useState<string>(() => {
     return localStorage.getItem('dream-achiever-glow-color') || '#a855f7';
   });
   
-  // Load slide duration from localStorage or use a default
   const [slideDuration, setSlideDuration] = useState<number>(() => {
     const savedDuration = localStorage.getItem('dream-achiever-slide-duration');
-    return savedDuration ? parseInt(savedDuration, 10) : 7000; // Default to 7 seconds
+    return savedDuration ? parseInt(savedDuration, 10) : 7000;
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Effect to save slides to localStorage whenever they change
+
+  // Audio state
+  const uiAudioRef = useRef<HTMLAudioElement>(null);
+
+  // === DATA PERSISTENCE EFFECTS ===
   useEffect(() => {
-    try {
-      localStorage.setItem('dream-achiever-slides', JSON.stringify(slides));
-    } catch (error) {
-      console.error('Failed to save slides to localStorage', error);
-    }
+    localStorage.setItem('dream-achiever-slides', JSON.stringify(slides));
   }, [slides]);
 
-  // Effect to save glow color to localStorage whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem('dream-achiever-glow-color', glowColor);
-    } catch (error) {
-      console.error('Failed to save glow color to localStorage', error);
-    }
+    localStorage.setItem('dream-achiever-glow-color', glowColor);
   }, [glowColor]);
   
-  // Effect to save slide duration to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('dream-achiever-slide-duration', String(slideDuration));
   }, [slideDuration]);
+  
 
+  // === FUNCTIONAL EFFECTS ===
+  // Effect for global click sound
+  useEffect(() => {
+    const audioEl = uiAudioRef.current;
+    if (!audioEl) return;
+
+    const playUiSound = () => {
+      audioEl.currentTime = 0;
+      audioEl.play().catch(error => console.error("UI sound play failed:", error));
+    };
+
+    const setupClickListener = () => {
+      document.addEventListener('click', playUiSound);
+    };
+
+    // readyState 4 means the media has loaded enough to play through
+    if (audioEl.readyState >= 4) {
+      setupClickListener();
+    } else {
+      audioEl.addEventListener('canplaythrough', setupClickListener, { once: true });
+    }
+
+    return () => {
+      document.removeEventListener('click', playUiSound);
+      audioEl.removeEventListener('canplaythrough', setupClickListener);
+    };
+  }, []);
+
+  // Effect to handle index correction when slides change
+  useEffect(() => {
+    if (slides.length > 0 && currentIndex >= slides.length) {
+      setCurrentIndex(slides.length - 1);
+    } else if (slides.length === 0 && currentIndex !== 0) {
+      setCurrentIndex(0);
+    }
+  }, [slides, currentIndex]);
+
+
+  // === HANDLER FUNCTIONS ===
   const handleAddSlide = (newSlide: Slide) => {
-    setSlides(prevSlides => [...prevSlides, newSlide]);
+    const newSlides = [...slides, newSlide];
+    setSlides(newSlides);
+    setCurrentIndex(newSlides.length - 1); // Jump to the new slide
     setIsModalOpen(false);
   };
 
@@ -67,6 +106,7 @@ const App: React.FC = () => {
   
   const handleSlidesUpdate = (newSlides: Slide[]) => {
     setSlides(newSlides);
+    setCurrentIndex(0); // Reset to first slide on import
   };
 
   const handleGlowColorChange = (color: string) => {
@@ -82,15 +122,20 @@ const App: React.FC = () => {
       localStorage.removeItem('dream-achiever-slides');
       localStorage.removeItem('dream-achiever-glow-color');
       localStorage.removeItem('dream-achiever-slide-duration');
+      
       setSlides(SLIDES);
       setGlowColor('#a855f7');
       setSlideDuration(7000);
+      setCurrentIndex(0);
+      setIsModalOpen(false);
     }
   };
 
 
   return (
     <>
+      <audio ref={uiAudioRef} src={UI_CLICK_SOUND_URL} preload="auto" />
+
       <div className="relative h-screen w-screen bg-black text-white antialiased">
         <main 
           className="absolute inset-0 h-full w-full p-6"
@@ -102,6 +147,8 @@ const App: React.FC = () => {
             <ImageSlider 
               slides={slides} 
               slideDuration={slideDuration}
+              currentIndex={currentIndex}
+              onCurrentIndexChange={setCurrentIndex}
             />
           </div>
         </main>
